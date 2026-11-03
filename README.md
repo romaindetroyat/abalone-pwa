@@ -52,6 +52,7 @@ Mesure indicative dans l’environnement de développement, sur **une seule posi
 - Tests Node des déplacements, poussées, éjections dans les six directions, sélections invalides, invariants sur des positions successives, annulation et capture gagnante immédiate.
 - `tests/parity.sql` : 101 comparaisons entre moteur client et validateur PostgreSQL sur plusieurs positions.
 - `tests/backend.sql` : création, entrée du second joueur, refus du troisième et des accès sans capacité, tours invalides, versions périmées, synchronisation, abandon, revanche mutuelle et isolation des tables. Les fixtures sont annulées par rollback.
+- Parcours navigateur sur la version publiée : création, entrée de deux sessions indépendantes, mouvement dans les deux sens et reprise après rechargement validés.
 - RLS est activé sans politique sur les tables privées : refus de tout accès direct intentionnel ; l’advisor Supabase signale ceci à titre informatif.
 
 ## Limites à valider sur matériel réel

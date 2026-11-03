@@ -27,6 +27,7 @@ function render(){
  $('mode-label').textContent=state.mode==='solo'?'SOLO · '+LEVELS[state.level].name.toUpperCase():'À DEUX · PARTIE PRIVÉE';
  let title='Prenez position.',text='Touchez une bille pour commencer.',eyebrow='À VOUS DE JOUER';
  if(state.over){eyebrow='FIN DE PARTIE';title=state.win===0?'L’équilibre parfait.':state.win===my?'Bien joué.':'La revanche attend.';text=state.win===0?'La partie se termine sur une égalité.':state.win===my?'Vous remportez cette partie.':'Votre adversaire remporte cette partie.';}
+ else if(online?.status==='restoring'&&state.mode==='online'){eyebrow='REPRISE DE LA PARTIE';title='Le plateau revient.';text='Récupération de votre position sauvegardée…';}
  else if(online?.status==='waiting'&&state.mode==='online'){eyebrow='EN ATTENDANT VOTRE AMI';title='Partagez le plateau.';text='Envoyez le lien d’invitation pour commencer.';}
  else if(busy){eyebrow='L’ORDINATEUR RÉFLÉCHIT';title='Il prépare son coup.';text='Prenez le temps d’observer la position.';}
  else if(state.turn!==my){eyebrow='À VOTRE ADVERSAIRE';title='À chacun son tempo.';text='Le plateau se met à jour automatiquement.';}
@@ -37,7 +38,7 @@ function render(){
  const dirs=[4,5,0,3,2,1];$('directions').replaceChildren(...dirs.map(screen=>{const d=my===2?(screen+3)%6:screen,b=document.createElement('button');b.textContent=arrow[screen];b.disabled=!legal.some(m=>m.d===d);b.setAttribute('aria-label','Déplacer vers '+directionNames[screen]);b.title=directionNames[screen];b.dataset.direction=d;if(state.preview?.d===d)b.className='selected';b.onclick=()=>chooseDirection(d);return b;}));
  $('confirm-move').hidden=!state.preview;$('confirm-move').disabled=!canPlay();$('move-hint').hidden=!!state.preview;
  $('undo').disabled=state.mode!=='solo'||!state.snapshots.length||animating;$('resign').disabled=state.over||animating||networkBusy||(state.mode==='online'&&online?.status!=='playing');
- $('online-card').hidden=state.mode!=='online';if(online){$('room-code').textContent=online.code.match(/.{1,4}/g)?.join(' ');}
+ $('online-card').hidden=state.mode!=='online'||online?.status==='restoring';if(online){$('room-code').textContent=online.code.match(/.{1,4}/g)?.join(' ');}
  $('move-count').textContent=state.history.length+(state.history.length===1?' coup':' coups');$('history').replaceChildren(...state.history.map(m=>{const li=document.createElement('li');li.textContent=(m.player===1?'● ':'○ ')+notation(m);return li;}));
  $('connection-label').textContent=state.mode==='solo'?'Solo · disponible hors connexion':'À deux · sauvegarde automatique';
  $('sound').setAttribute('aria-label',prefs.sound?'Couper le son':'Activer le son');$('sound').style.opacity=prefs.sound?'1':'.5';
@@ -82,5 +83,5 @@ const saved=read('abalone:solo',null);if(saved?.board?.length===61&&[1,2].includ
 $('nickname').value=read('abalone:name','');$('level').value=state.level;$('color').value=state.color;updateLevel();render();
 const invite=new URLSearchParams(location.search).get('partie'),active=read('abalone:active',null);
 if(invite){chooseTab('online');$('join-code').value=invite;$('new-dialog').showModal();}
-else if(active?.id){try{acceptOnline(await rpc('state',{id:active.id}));poll();}catch(e){toast('Reprise réseau indisponible. Vous pouvez réessayer avec le code de la partie.');chooseTab('online');$('new-dialog').showModal();}}
+else if(active?.id){state.mode='online';online={id:active.id,code:'',status:'restoring'};render();try{const recovered=await rpc('state',{id:active.id});if(online?.id===active.id){acceptOnline(recovered);poll();}}catch(e){online=null;state.mode='solo';render();toast('Reprise réseau indisponible. Vous pouvez réessayer avec le code de la partie.');chooseTab('online');$('new-dialog').showModal();}}
 else if(!saved)$('new-dialog').showModal();else launchAI();
