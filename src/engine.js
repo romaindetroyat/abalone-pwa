@@ -42,6 +42,24 @@ export function moves(board,player){
   for(let i=0;i<61;i++)if(board[i]===player){add([i],-1);for(let a=0;a<3;a++){let j=NEIGHBORS[i][a];if(j>=0&&board[j]===player){add([i,j],a);let k=NEIGHBORS[j][a];if(k>=0&&board[k]===player)add([i,j,k],a);}}}
   return out;
 }
+// An ejection must end at an exposed edge. Trace only those rays instead of
+// generating every quiet move at each leaf of the search tree.
+const EXIT_RAYS=NEIGHBORS.flatMap((ns,i)=>ns.flatMap((n,d)=>n<0?[[i,d]]:[]));
+export function captureMoves(board,player){
+  const out=[];
+  for(const [edge,d] of EXIT_RAYS){
+    if(board[edge]!==3-player)continue;
+    const back=(d+3)%6;let n=edge,enemies=0;
+    while(n>=0&&board[n]===3-player&&enemies<3){enemies++;n=NEIGHBORS[n][back];}
+    if(enemies>2)continue;
+    const group=[];
+    while(n>=0&&board[n]===player&&group.length<3){
+      group.push(n);n=NEIGHBORS[n][back];
+      if(group.length>enemies){const m=legalMove(board,player,group,d);if(m)out.push(m);}
+    }
+  }
+  return out;
+}
 export function make(board,player,m){
   const changes=new Map();for(const i of [...m.group,...m.pushed]){changes.set(i,board[i]);const j=NEIGHBORS[i][m.d];if(j>=0)changes.set(j,board[j]);}
   for(const i of [...m.group,...m.pushed])board[i]=0;

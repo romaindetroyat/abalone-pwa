@@ -1,13 +1,13 @@
 import {CELLS,NEIGHBORS,DIRS} from './engine.js';
+import {BoardInput} from './input.js';
 const TAU=Math.PI*2;
 export class BoardView{
- constructor(canvas,onCell,onDirection){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.onCell=onCell;this.onDirection=onDirection;this.hits=[];this.state=null;this.animation=null;this.frame=0;this.resize=new ResizeObserver(()=>this.draw());this.resize.observe(canvas);
- canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;this.down={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
- canvas.addEventListener('pointerup',e=>{if(!this.down)return;const delta=Math.hypot(e.clientX-this.down.x,e.clientY-this.down.y);this.down=null;if(delta>20)return;const rect=canvas.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;
-  for(const h of this.hits)if(Math.hypot(x-h.x,y-h.y)<h.r){onDirection(h.d);return;}
-  let nearest=-1,dist=Infinity;this.points.forEach((p,i)=>{const dd=Math.hypot((x-p.x),(y-p.y));if(dd<dist){dist=dd;nearest=i;}});if(dist<this.unit*.55)onCell(nearest);
- });canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('pointercancel',()=>this.down=null);
+ constructor(canvas,onCell,onDirection,onRange){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.hits=[];this.state=null;this.animation=null;this.frame=0;this.resize=new ResizeObserver(()=>this.draw());this.resize.observe(canvas);
+ this.input=new BoardInput(canvas,{cellAt:e=>this.cellAt(e),directionAt:e=>this.directionAt(e),selectCell:onCell,chooseDirection:onDirection,selectRange:onRange});
  }
+ localPoint(e){const rect=this.canvas.getBoundingClientRect();return{x:e.clientX-rect.left,y:e.clientY-rect.top};}
+ cellAt(e){const {x,y}=this.localPoint(e);let nearest=-1,dist=Infinity;this.points?.forEach((p,i)=>{const dd=Math.hypot(x-p.x,y-p.y);if(dd<dist){dist=dd;nearest=i;}});return dist<this.unit*.55?nearest:-1;}
+ directionAt(e){const {x,y}=this.localPoint(e);return this.hits.find(h=>Math.hypot(x-h.x,y-h.y)<h.r)?.d??null;}
  update(state){this.state=state;this.draw();}
  animate(old,move,player,done){if(this.state.reduced){done();return;}this.animation={old,move,player,start:performance.now(),done};this.draw();}
  project(q,r){const turn=this.state?.color===2?-1:1;return{x:this.cx+turn*(q+r*.5)*this.unit,y:this.cy+turn*r*Math.sqrt(3)/2*this.unit*this.tilt};}

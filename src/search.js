@@ -1,13 +1,13 @@
-import {moves,make,unmake,NEIGHBORS,DIST,count} from './engine.js';
+import {moves,captureMoves,make,unmake,NEIGHBORS,DIST} from './engine.js';
 export const LEVELS=[
  {name:'Découverte',ms:120,depth:1,noise:1600},
  {name:'Débutant',ms:250,depth:2,noise:500},
  {name:'Amateur',ms:600,depth:3,noise:80},
  {name:'Confirmé',ms:1500,depth:5,noise:0},
- {name:'Avancé',ms:3500,depth:8,noise:0},
- {name:'Expert',ms:7000,depth:12,noise:0},
- {name:'Expert +',ms:15000,depth:20,noise:0},
- {name:'Recherche maximale',ms:30000,depth:30,noise:0}
+ {name:'Avancé',ms:2500,depth:8,noise:0},
+ {name:'Expert',ms:4000,depth:12,noise:0},
+ {name:'Expert +',ms:6000,depth:20,noise:0},
+ {name:'Recherche maximale',ms:10000,depth:30,noise:0}
 ];
 export function evaluate(b,p){
  const score=[0,0,0],num=[0,0,0];
@@ -41,13 +41,12 @@ export function search(board,player,{level=4,ms,depth,onProgress=()=>{},history=
   const [h,s]=hash(b,p),lk=h+':'+s;if(line.has(lk))return 0;
   const entry=tt.get(h),valid=entry?.s===s;const before=alpha;
   if(valid&&entry.depth>=remaining&&remaining>0){if(entry.flag===0)return entry.value;if(entry.flag===1)alpha=Math.max(alpha,entry.value);else beta=Math.min(beta,entry.value);if(alpha>=beta)return entry.value;}
-  let options=moves(b,p);
-  if(!options.length)return -900000+ply;
+  let options;
   if(remaining<=0){
    if(remaining<=-3)return score;
    if(score>=beta)return score;alpha=Math.max(alpha,score);
-   options=options.filter(m=>m.capture);if(!options.length)return score;
-  }
+   options=captureMoves(b,p);if(!options.length)return score;
+  }else{options=moves(b,p);if(!options.length)return -900000+ply;}
   options=order(options,valid?entry.move:-1,ply,p);line.add(lk);
   let bestScore=remaining<=0?score:-Infinity,bestId=-1,idx=0;
   try{for(const m of options){const undo=make(b,p,m);let v;
@@ -72,7 +71,7 @@ export function search(board,player,{level=4,ms,depth,onProgress=()=>{},history=
     if(history.length){const u=make(b,player,m);const k=Array.from(b).join('')+(3-player);unmake(b,u);if(history.includes(k))v-=70;}
     if(v>localValue){localValue=v;local=m;}alpha=Math.max(alpha,v);
    }
-   best=local;value=localValue;completed=d;onProgress({depth:d,nodes,score:value,ms:performance.now()-start});
+   best=local;value=localValue;completed=d;onProgress({move:best,depth:d,nodes,score:value,ms:performance.now()-start});
   }catch(e){if(e!==TIMEOUT)throw e;stopped=true;break;}
   if(Math.abs(value)>900000||performance.now()-start>budget*.7)break;
  }
